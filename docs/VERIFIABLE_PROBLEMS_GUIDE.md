@@ -208,8 +208,11 @@ Participant            Verifier API            PostgreSQL
 
 - **Hadamard, Conway, Still Life, HP Protein:** Higher score is better. Submissions ranked descending.
 - **Tensor:** Lower score is better (fewer multiplications). Submissions ranked ascending.
-- **Percentile formula:** For position `i` in a list of N valid submissions: `percentile = 100 * (N - i) / (N + 1)`
-- Ties broken by submission time (earlier wins).
+- **Percentile formula:**
+  - Higher-is-better: `percentile = 100 * count(score <= your_score) / N`
+  - Lower-is-better: `percentile = 100 * count(score >= your_score) / N`
+  where `N` is the total number of valid submissions for the same problem+instance.
+- Tied scores share the same percentile, so all top-score ties get `100.0`.
 - Percentiles are computed within the same `problem_name + instance` bucket and recomputed on every new submission.
 
 ### Rate Limits
@@ -406,7 +409,7 @@ curl -X POST http://168.144.71.199:8080/api/v1/submit \
   "problem_name": "stilllife",
   "instance": {"n": 8},
   "score": 4,
-  "percentile": 50.0,
+  "percentile": 100.0,
   "is_record": false,
   "message": "Verification passed"
 }
@@ -575,7 +578,7 @@ curl http://168.144.71.199:8080/api/v1/submission/019d6745-930d-7594-b098-8366ad
   "instance": {"n": 8},
   "is_valid": true,
   "score": 4,
-  "percentile": 50.0,
+  "percentile": 100.0,
   "is_record": false
 }
 ```

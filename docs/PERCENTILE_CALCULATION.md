@@ -15,50 +15,40 @@ Two explicit groups are used:
 - `HIGHER_SCORE_BETTER_PROBLEMS` (currently: `hadamard`, `conway`, `stilllife`, `hpprotein`)
 - `LOWER_SCORE_BETTER_PROBLEMS` (currently: `tensor`)
 
-## 3) Fallback score for invalid + missing score
+## 3) Which rows are included
 
-If `is_valid == false` and `score is None`, a fallback score is used for ranking:
+Only submissions with both conditions are included in percentile computation:
 
-- Higher-is-better problems: `0`
-- Lower-is-better problems: `+Infinity`
+- `is_valid == true`
+- `score is not None`
 
-If a row already has a score (even when `is_valid == false`), that score is preserved.
+Invalid submissions are excluded from the percentile denominator and their stored `percentile` is `null`.
 
-Note: the current implementation also persists this fallback into the `score` column for rows that were invalid with `score = None`.
+## 4) Tie behavior
 
-## 4) Imaginary worst entry
+Submissions with identical score receive the same percentile.
 
-For percentile ranking, one extra **imaginary worst** entry is always included in the denominator.
+This means all best-score ties receive `100.0`.
 
-If there are `N` ranked real entries, percentile is computed against `N + 1` total entries.
+## 5) Percentile formula used
 
-This prevents edge behavior at the low end and keeps ranking stable for early submissions.
+Let `N` be the number of valid submissions in the same `problem_name + instance` bucket.
 
-## 5) Tie-breaking rule
+For a submission with score `s`:
 
-Ties are broken deterministically by submission order:
-
-1. Better score first (based on problem direction)
-2. Earlier `created_at` first
-3. `submission_id` as final deterministic tie-breaker
-
-So when two submissions have equal score, the one submitted earlier gets higher percentile.
-
-## 6) Percentile formula used
-
-After sorting from best to worst, for each entry at zero-based position `index` in the ranked list of size `N`:
-
-- `worse_count_including_imaginary = N - index`
-- `percentile = 100 * worse_count_including_imaginary / (N + 1)`
+- Higher-is-better problems:
+	- `percentile = 100 * count(score <= s) / N`
+- Lower-is-better problems:
+	- `percentile = 100 * count(score >= s) / N`
 
 Rounded to 4 decimal places.
 
-## 7) First-entry example
+## 6) First-entry example
 
-If there is only one real entry (`N = 1`):
+If there is one valid submission (`N = 1`), that submission gets `100.0`.
 
-- `index = 0`
-- `worse_count_including_imaginary = 1`
-- `percentile = 100 * 1 / 2 = 50`
+## 7) Best-tie example
 
-So the first entry gets percentile `50.0` under this logic.
+If `N = 5` and two submissions tie for best score, both get:
+
+- `percentile = 100 * 5 / 5 = 100.0`

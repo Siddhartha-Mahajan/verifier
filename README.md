@@ -115,7 +115,7 @@ curl -X POST http://localhost:8080/api/v1/submit \
   "problem_name": "stilllife",
   "instance": {"n": 8},
   "score": 4,
-  "percentile": 50.0,
+  "percentile": 100.0,
   "is_record": false,
   "message": "Verification passed"
 }

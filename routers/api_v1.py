@@ -1,4 +1,5 @@
 import asyncio
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from hmac import compare_digest
@@ -129,39 +130,42 @@ def _is_valid_email(email: str) -> bool:
 	return "." in domain and len(domain.split(".")[-1]) > 0
 
 
-def _effective_score(submission: Submission, problem_name: str) -> Decimal | None:
-	if submission.score is not None:
-		return Decimal(str(submission.score))
-	if not submission.is_valid:
-		return _fallback_score_for_problem(problem_name)
-	return None
+def _valid_scored_entries(submissions: list[Submission]) -> list[tuple[Submission, Decimal]]:
+	entries: list[tuple[Submission, Decimal]] = []
+	for submission in submissions:
+		if not submission.is_valid:
+			continue
+		if submission.score is None:
+			continue
+		entries.append((submission, Decimal(str(submission.score))))
+	return entries
 
 
 def _calculate_percentile_map(problem_name: str, submissions: list[Submission]) -> dict[UUID, float]:
 	direction = _score_direction_for_problem(problem_name)
-	ranked_entries: list[tuple[Submission, Decimal]] = []
-	for submission in submissions:
-		effective_score = _effective_score(submission, problem_name)
-		if effective_score is None:
-			continue
-		ranked_entries.append((submission, effective_score))
-
-	if not ranked_entries:
+	valid_entries = _valid_scored_entries(submissions)
+	if not valid_entries:
 		return {}
 
-	if direction == "low":
-		ranked_entries.sort(key=lambda item: (item[1], item[0].created_at, str(item[0].submission_id)))
-	else:
-		ranked_entries.sort(key=lambda item: (-item[1], item[0].created_at, str(item[0].submission_id)))
+	total = len(valid_entries)
+	score_counts = Counter(score for _, score in valid_entries)
+	sorted_scores = sorted(score_counts.keys())
 
-	total_with_imaginary_worst = len(ranked_entries) + 1
+	score_to_percentile: dict[Decimal, float] = {}
+	if direction == "low":
+		cumulative = 0
+		for score in reversed(sorted_scores):
+			cumulative += score_counts[score]
+			score_to_percentile[score] = round((100.0 * cumulative) / total, 4)
+	else:
+		cumulative = 0
+		for score in sorted_scores:
+			cumulative += score_counts[score]
+			score_to_percentile[score] = round((100.0 * cumulative) / total, 4)
+
 	percentiles: dict[UUID, float] = {}
-	for index, (submission, _) in enumerate(ranked_entries):
-		worse_count_including_imaginary = len(ranked_entries) - index
-		percentiles[submission.submission_id] = round(
-			(100.0 * worse_count_including_imaginary) / total_with_imaginary_worst,
-			4,
-		)
+	for submission, score in valid_entries:
+		percentiles[submission.submission_id] = score_to_percentile[score]
 	return percentiles
 
 
@@ -173,8 +177,6 @@ async def _compute_percentile(
 	score_direction: str,
 	submission_id: UUID | None = None,
 ) -> float | None:
-	_ = score_direction
-
 	if score is None and submission_id is None:
 		return None
 
@@ -191,13 +193,19 @@ async def _compute_percentile(
 
 	if score is None:
 		return None
-	score_num = Decimal(str(score))
-	for submission in submissions:
-		effective_score = _effective_score(submission, problem_name)
-		if effective_score == score_num:
-			return percentile_map.get(submission.submission_id)
 
-	return None
+	valid_entries = _valid_scored_entries(submissions)
+	if not valid_entries:
+		return None
+
+	direction = score_direction if score_direction in {"high", "low"} else _score_direction_for_problem(problem_name)
+	score_num = Decimal(str(score))
+	if direction == "low":
+		worse_or_equal_count = sum(1 for _, entry_score in valid_entries if entry_score >= score_num)
+	else:
+		worse_or_equal_count = sum(1 for _, entry_score in valid_entries if entry_score <= score_num)
+
+	return round((100.0 * worse_or_equal_count) / len(valid_entries), 4)
 
 
 async def _recompute_instance_percentiles(
@@ -211,11 +219,6 @@ async def _recompute_instance_percentiles(
 	)
 	result = await db.execute(stmt)
 	submissions = result.scalars().all()
-
-	for submission in submissions:
-		if (not submission.is_valid) and submission.score is None:
-			fallback_score = _fallback_score_for_problem(problem_name)
-			submission.score = fallback_score
 
 	percentile_map = _calculate_percentile_map(problem_name, submissions)
 	for submission in submissions:
@@ -346,12 +349,6 @@ def _score_direction_for_problem(problem_name: str) -> str:
 	if problem_name in LOWER_SCORE_BETTER_PROBLEMS:
 		return "low"
 	return "high"
-
-
-def _fallback_score_for_problem(problem_name: str) -> Decimal:
-	if problem_name in LOWER_SCORE_BETTER_PROBLEMS:
-		return Decimal("Infinity")
-	return Decimal("0")
 
 
 
