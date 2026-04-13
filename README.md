@@ -10,7 +10,7 @@ Automated verification and scoring service for the **CAISc 2026 Verifiable Probl
 
 | ID | Problem | Domain | Scoring | Instances |
 |----|---------|--------|---------|-----------|
-| `hadamard` | Hadamard Maximal Determinant | Linear Algebra | \|det(M)\| — higher is better | 24 values of n (23–99) |
+| `hadamard` | Hadamard Maximal Determinant | Linear Algebra | 100 * \|det(M)\| / bound(n) — higher is better | 24 values of n (23–99) |
 | `conway` | Conway's 99-Graph | Graph Theory | % constraints satisfied — higher is better | Single fixed instance |
 | `tensor` | Matrix Multiplication Tensor Rank | Algebraic Complexity | # scalar multiplications — lower is better | 11 size triples |
 | `stilllife` | Connected Still Life | Cellular Automata | Live cell count — higher is better | n ∈ {8, 10, 16, 20, 32} |
@@ -124,6 +124,8 @@ curl -X POST http://localhost:8080/api/v1/submit \
 For complete endpoint documentation with all problem payloads, see [docs/API_ENDPOINTS.md](docs/API_ENDPOINTS.md).
 
 ### Query the Leaderboard
+
+Leaderboard entries return ranking metadata only and do not include the raw `submission` payload.
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/leaderboard \

@@ -78,6 +78,8 @@ Coefficients in U, V, W must be integers or exact rational strings like `"1/2"`.
 }
 ```
 
+Verifier checks still-life stability on the finite box and its one-cell exterior ring to prevent births just outside the submitted grid.
+
 **HP Protein Folding:**
 
 ```json
@@ -102,7 +104,7 @@ Rules checked: self-avoiding walk, consecutive lattice adjacency, and H-H contac
   "submission_id": "550e8400-e29b-41d4-a716-446655440000",
   "problem_name": "hadamard",
   "instance": { "n": 23 },
-  "score": 2779447296000000,
+  "score": 93.1983,
   "percentile": 87.5,
   "is_record": false,
   "message": "Verification passed"
@@ -154,7 +156,7 @@ Retrieve a past submission result. Percentile is recalculated within the same `p
   "problem_name": "hadamard",
   "instance": { "n": 23 },
   "is_valid": true,
-  "score": 2779447296000000,
+  "score": 93.1983,
   "percentile": 87.5,
   "is_record": false
 }
@@ -205,6 +207,8 @@ For hpprotein: `{"problem_name": "hpprotein", "instances": [{"sequence_id":"WARM
 
 Return top-k submissions for a specific `problem_name + instance` bucket.
 
+The leaderboard response intentionally redacts raw solution payloads (`submission`) to prevent copying other participants' exact solutions.
+
 ### Headers
 
 | Header | Required | Description |
@@ -244,7 +248,6 @@ Return top-k submissions for a specific `problem_name + instance` bucket.
       "ip_address": "203.0.113.42",
       "problem_name": "hpprotein",
       "instance": { "sequence_id": "S5" },
-      "submission": { "lattice": "2D", "coords": [[0, 0], [1, 0], [1, 1]] },
       "is_valid": true,
       "score": 23,
       "score_direction": "high",

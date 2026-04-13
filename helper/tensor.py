@@ -18,6 +18,7 @@ Score = R (num_multiplications), lower is better.
 from typing import Dict, Any, List, Optional, Union
 from fractions import Fraction
 import hashlib
+import secrets
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -35,13 +36,13 @@ CURRENT_RECORDS: Dict[str, int] = {
     "2,2,3": 11,
     "2,3,3": 15,
     "2,3,4": 20,
-    "2,4,5": 30,
+    "2,4,5": 32,
     "3,3,3": 23,
     "3,3,4": 29,
     "3,3,6": 40,
-    "4,4,4": 49,
-    "4,4,5": 58,
-    "5,5,5": 96,
+    "4,4,4": 48,
+    "4,4,5": 61,
+    "5,5,5": 93,
 }
 
 NUM_TESTS = 100
@@ -107,13 +108,16 @@ def _standard_multiply(A: List[List[int]], B: List[List[int]], n: int, m: int, p
     return C
 
 
-def _deterministic_random_matrices(n: int, m: int, p: int, seed_str: str):
+def _random_test_matrices(n: int, m: int, p: int, seed_str: Optional[str] = None):
     """
     Generate NUM_TESTS pairs of random integer matrices.
-    Uses a deterministic seed for reproducibility.
+    If seed_str is provided, test cases are reproducible for that seed.
+    If not provided, a random seed is generated.
     Yields (A, B) pairs where A is n x m and B is m x p.
     """
     import random
+    if seed_str is None:
+        seed_str = secrets.token_hex(16)
     rng = random.Random(hashlib.sha256(seed_str.encode()).hexdigest())
     for _ in range(NUM_TESTS):
         A = [[rng.randint(-ENTRY_RANGE, ENTRY_RANGE) for _ in range(m)] for _ in range(n)]
@@ -137,7 +141,7 @@ def verify(
     instance: Dict[str, Any],
     submission: Dict[str, Any],
     current_record: Optional[int] = None,
-    seed_str: str = "caisc2026-tensor-verify",
+    seed_str: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Verify a tensor decomposition for matrix multiplication.
@@ -146,7 +150,7 @@ def verify(
         instance: {"n": int, "m": int, "p": int}
         submission: {"num_multiplications": int, "U": [...], "V": [...], "W": [...]}
         current_record: best known R for this size (None if unknown)
-        seed_str: seed for random test matrices (override with submission_id for production)
+        seed_str: optional seed for random test matrices (use submission_id for reproducibility)
 
     Returns dict with: is_valid, score, error_code, error_message,
                        error_details, is_record, tests_passed
@@ -226,7 +230,7 @@ def verify(
     tests_passed = 0
     first_failure = None
 
-    for test_idx, (A, B) in enumerate(_deterministic_random_matrices(n, m, p, seed_str)):
+    for test_idx, (A, B) in enumerate(_random_test_matrices(n, m, p, seed_str)):
         expected = _standard_multiply(A, B, n, m, p)
 
         # Run the submitted algorithm

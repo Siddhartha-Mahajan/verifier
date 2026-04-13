@@ -73,7 +73,6 @@ class LeaderboardEntryResponse(BaseModel):
     ip_address: str
     problem_name: str
     instance: dict[str, Any]
-    submission: dict[str, Any]
     is_valid: bool
     score: int | float | None = None
     score_direction: str

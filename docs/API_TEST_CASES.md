@@ -129,7 +129,7 @@ Expected:
   "submission_id": "<uuid>",
   "problem_name": "hadamard",
   "instance": { "n": 23 },
-  "score": 2779447296000000,
+  "score": 93.1983,
   "percentile": 100.0,
   "is_record": false,
   "message": "Verification passed"
@@ -587,6 +587,8 @@ Expected: 400, `"error_code": "INVALID_FORMAT"`, message about rational strings
 
 ## Still Life Submissions
 
+Stability checks are evaluated on the submitted box and its one-cell exterior ring, so births immediately outside the box are rejected.
+
 ### S1. Valid: block in 8x8 (4 cells)
 
 ```bash
@@ -615,7 +617,7 @@ curl -s -X POST http://localhost:8080/api/v1/submit \
 Expected:
 
 ```json
-{
+  "score": 93.1983,
   "success": true,
   "submission_id": "<uuid>",
   "problem_name": "stilllife",
@@ -852,6 +854,33 @@ curl -s -X POST http://localhost:8080/api/v1/submit \
 
 Expected: 400, `"error_code": "INVALID_INSTANCE"`
 
+### S11. Reject: birth just outside boundary
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/submit \
+  -H "Content-Type: application/json" \
+  -d '{
+  "email": "test@example.com",
+  "problem_name": "stilllife",
+  "instance": {"n": 8},
+  "submission": {
+    "claimed_cells": 6,
+    "grid": [
+      [1,1,1,1,0,0,0,0],
+      [1,0,0,1,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0]
+    ]
+  }
+}' | python -m json.tool
+```
+
+Expected: 400, `"error_code": "VERIFICATION_FAILED"`, message about stability (birth outside boundary)
+
 ---
 
 ## HP Protein Folding Submissions
@@ -1059,7 +1088,7 @@ Expected: 404, `"error_code": "NOT_FOUND"`
 
 | #   | Problem   | Type   | Description            | Expected                 |
 | --- | --------- | ------ | ---------------------- | ------------------------ |
-| H1  | hadamard  | valid  | n=23 witness matrix    | score = 2779447296000000 |
+| H1  | hadamard  | valid  | n=23 witness matrix    | score = 93.1983           |
 | H2  | hadamard  | reject | n=5 not allowed        | INVALID_INSTANCE         |
 | H3  | hadamard  | reject | wrong claimed_det      | VERIFICATION_FAILED      |
 | H4  | hadamard  | reject | missing claimed_det    | MISSING_FIELD            |
@@ -1086,6 +1115,7 @@ Expected: 404, `"error_code": "NOT_FOUND"`
 | S8  | stilllife | reject | disconnected blocks    | VERIFICATION_FAILED      |
 | S9  | stilllife | reject | wrong cell count       | VERIFICATION_FAILED      |
 | S10 | stilllife | reject | n=5 not allowed        | INVALID_INSTANCE         |
+| S11 | stilllife | reject | birth outside boundary | VERIFICATION_FAILED      |
 | P1  | hpprotein | valid  | warm-up snake          | score = 2                |
 | P2  | hpprotein | valid  | S5 linear fold         | success                  |
 | P3  | hpprotein | reject | S1 excluded            | INVALID_INSTANCE         |

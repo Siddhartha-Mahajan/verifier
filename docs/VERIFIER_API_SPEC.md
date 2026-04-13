@@ -43,7 +43,7 @@ The service is independent of the conference website. Users submit directly to t
 | Instance     | `{"n": 23}` where n is from the allowed list                                 |
 | Submission   | `{"claimed_det": <int>, "matrix": [[1,-1,...], ...]}`                        |
 | Verification | Matrix is n x n, entries are +1 or -1, exact determinant matches claimed_det |
-| Score        | abs(determinant), higher is better                                           |
+| Score        | `100 * abs(determinant) / bound(n)`, higher is better                        |
 | Timeout      | 60 seconds                                                                   |
 | Max payload  | 500 KB                                                                       |
 
@@ -114,7 +114,7 @@ The service is independent of the conference website. Users submit directly to t
 2. Run the submitted algorithm: for each t in 1..R, compute scalar `s_t = sum(U[t] * A) * sum(V[t] * B)`, then accumulate `C_submitted += s_t * W[t]` (element-wise)
 3. Check C_submitted == C exactly
 
-The random seed is fixed per submission (seeded from submission_id) for reproducibility.
+The verifier uses a submission-scoped random seed by default so each submission gets an independent test set.
 
 **Verification steps:**
 
@@ -132,7 +132,7 @@ The random seed is fixed per submission (seeded from submission_id) for reproduc
 | ------------ | -------------------------------------------------------------------------------------------- |
 | Instance     | `{"n": 20}` where n is from the allowed list                                                 |
 | Submission   | `{"claimed_cells": <int>, "grid": [[0,1,...], ...]}`                                         |
-| Verification | Grid is n x n binary, stable under GoL rules, all live cells 8-connected, cell count matches |
+| Verification | Grid is n x n binary, stable under GoL rules (including outside-boundary births in one-cell exterior ring), all live cells 8-connected, cell count matches |
 | Score        | claimed_cells, higher is better                                                              |
 | Timeout      | 10 seconds                                                                                   |
 | Max payload  | 50 KB                                                                                        |
@@ -145,7 +145,7 @@ The random seed is fixed per submission (seeded from submission_id) for reproduc
 2. Check grid is n x n with entries 0 or 1
 3. Count live cells, verify count == claimed_cells
 4. For each live cell: check it has exactly 2 or 3 live neighbors (survival rule)
-5. For each dead cell adjacent to any live cell: check it does NOT have exactly 3 live neighbors (no-birth rule)
+5. For each dead cell in the box or its one-cell exterior ring: check it does NOT have exactly 3 live neighbors (no-birth rule)
 6. BFS from any live cell; verify all live cells are reached (8-connectivity)
 
 ---
@@ -212,13 +212,13 @@ The random seed is fixed per submission (seeded from submission_id) for reproduc
 For problems where higher is better (hadamard, conway, stilllife, hpprotein):
 
 ```
-percentile = 100 * count(valid submissions with score < this_score) / count(all valid submissions for this problem+instance)
+percentile = 100 * count(valid submissions with score <= this_score) / count(all valid submissions for this problem+instance)
 ```
 
 For problems where lower is better (tensor):
 
 ```
-percentile = 100 * count(valid submissions with score > this_score) / count(all valid submissions for this problem+instance)
+percentile = 100 * count(valid submissions with score >= this_score) / count(all valid submissions for this problem+instance)
 ```
 
 Recalculated on each GET request (not cached in MVP).

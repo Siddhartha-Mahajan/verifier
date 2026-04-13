@@ -65,7 +65,8 @@ def test_hadamard_valid_n23_witness():
         current_record=2779447296000000,
     )
     assert r["is_valid"] is True
-    assert r["score"] == 2779447296000000
+    # Score is now 100 * |det| / theoretical bound(n), rounded to 4 decimals.
+    assert abs(r["score"] - 93.1983) < 1e-4
     assert r["is_record"] is False  # matches but doesn't beat record
 
 
@@ -691,6 +692,21 @@ def test_stilllife_reject_birth_violation():
     r = verify_stilllife(
         instance={"n": 8},
         submission={"claimed_cells": 3, "grid": grid},
+    )
+    assert r["error_code"] == "VERIFICATION_FAILED"
+
+
+def test_stilllife_reject_birth_outside_box_boundary():
+    """Reject patterns that create births just outside the n x n box.
+
+    This pattern is stable inside the box but causes a birth at (-1, 1)
+    on the infinite board.
+    """
+    cells = [(0, 0), (0, 1), (0, 2), (0, 3), (1, 0), (1, 3)]
+    grid = _make_grid(8, cells)
+    r = verify_stilllife(
+        instance={"n": 8},
+        submission={"claimed_cells": 6, "grid": grid},
     )
     assert r["error_code"] == "VERIFICATION_FAILED"
 

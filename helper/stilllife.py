@@ -20,13 +20,8 @@ from collections import deque
 
 ALLOWED_N = [8, 10, 16, 20, 32]
 
-CURRENT_RECORDS: Dict[int, int] = {
-    8: 20,
-    10: 34,
-    16: 92,
-    20: 148,
-    32: 390,
-}
+# Records are intentionally unset until independently verified.
+CURRENT_RECORDS: Dict[int, int] = {}
 
 TIMEOUT_SECONDS = 10
 
@@ -79,15 +74,21 @@ def _count_live_neighbors(grid: List[List[int]], n: int, r: int, c: int) -> int:
 def _check_stability(grid: List[List[int]], n: int) -> Tuple[bool, List[Dict]]:
     """
     Check Game of Life stability rules.
+
+    We evaluate cells in the n x n box plus a one-cell outer ring. This
+    catches births just outside the submitted box, matching infinite-grid
+    still-life semantics.
+
     Returns (all_ok, list of violations).
     Only collects up to 20 violations for reporting.
     """
     violations = []
 
-    for r in range(n):
-        for c in range(n):
+    for r in range(-1, n + 1):
+        for c in range(-1, n + 1):
             nb = _count_live_neighbors(grid, n, r, c)
-            if grid[r][c] == 1:
+            alive = 0 <= r < n and 0 <= c < n and grid[r][c] == 1
+            if alive:
                 # Live cell: must have 2 or 3 neighbors to survive
                 if nb not in (2, 3):
                     if len(violations) < 20:
@@ -114,13 +115,18 @@ def _check_stability(grid: List[List[int]], n: int) -> Tuple[bool, List[Dict]]:
 def _check_stability_full(grid: List[List[int]], n: int) -> Tuple[bool, int]:
     """
     Check stability and return (all_ok, total_violation_count).
+
+    Includes the one-cell exterior ring around the n x n box so births outside
+    the box are counted as violations.
+
     Does not collect individual violations, just counts.
     """
     count = 0
-    for r in range(n):
-        for c in range(n):
+    for r in range(-1, n + 1):
+        for c in range(-1, n + 1):
             nb = _count_live_neighbors(grid, n, r, c)
-            if grid[r][c] == 1:
+            alive = 0 <= r < n and 0 <= c < n and grid[r][c] == 1
+            if alive:
                 if nb not in (2, 3):
                     count += 1
             else:

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from hmac import compare_digest
 from typing import Any, Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
@@ -329,6 +329,7 @@ def _verify_submission(problem_name: str, instance: dict[str, Any], submission: 
 			instance,
 			submission,
 			current_record=tensor_record(instance.get("n"), instance.get("m"), instance.get("p")),
+			seed_str=str(uuid4()),
 		)
 	if problem_name == "stilllife":
 		return verify_stilllife(instance, submission, current_record=stilllife_record(instance.get("n")))
@@ -615,7 +616,6 @@ async def get_leaderboard(
 			ip_address=row.ip_address,
 			problem_name=row.problem_name,
 			instance=row.instance,
-			submission=row.submission,
 			is_valid=row.is_valid,
 			score=_to_json_number(row.score),
 			score_direction=row.score_direction,

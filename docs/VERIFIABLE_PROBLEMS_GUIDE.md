@@ -28,7 +28,7 @@ The Verifiable Problems Track challenges AI systems (and their human collaborato
 
 **Domain:** Linear Algebra / Combinatorics
 **Open since:** Solved for n <= 22; open for n >= 23
-**Scoring:** Higher is better (maximize |det(M)|)
+**Scoring:** Higher is better (maximize 100 * |det(M)| / bound(n))
 
 Given n, find an n x n matrix M with entries in {+1, -1} that maximizes |det(M)|. Hadamard (1893) proved |det(M)| <= n^(n/2), but equality is only achievable when n = 1, 2, or n = 0 mod 4. For all other n, the true maximum is unknown.
 
@@ -89,15 +89,15 @@ Find the minimum number of scalar multiplications needed to compute the product 
 |---|---|---|
 | (2,2,2) | 8 | 7 (Strassen) |
 | (2,2,3) | 12 | 11 |
-| (2,3,3) | 18 | 11 |
+| (2,3,3) | 18 | 15 |
 | (2,3,4) | 24 | 20 |
-| (2,4,5) | 40 | 30 |
-| (3,3,3) | 27 | 21 |
+| (2,4,5) | 40 | 32 |
+| (3,3,3) | 27 | 23 |
 | (3,3,4) | 36 | 29 |
 | (3,3,6) | 54 | 40 |
-| (4,4,4) | 64 | 49 |
-| (4,4,5) | 80 | 58 |
-| (5,5,5) | 125 | 96 |
+| (4,4,4) | 64 | 48 |
+| (4,4,5) | 80 | 61 |
+| (5,5,5) | 125 | 93 |
 
 **What you submit:**
 - The number of multiplications (R)
@@ -139,7 +139,7 @@ Find a connected still life (stable pattern in Conway's Game of Life) inside an 
 
 **What the verifier checks:**
 - Grid is exactly n x n with binary entries
-- **Stability:** Every live cell has exactly 2 or 3 live neighbors; no dead cell has exactly 3 live neighbors (no births)
+- **Stability:** Every live cell has exactly 2 or 3 live neighbors; no dead cell in the box or its one-cell exterior ring has exactly 3 live neighbors (no births)
 - **Connectivity:** All live cells form a single 8-connected component
 - Cell count matches claim
 
